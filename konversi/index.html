@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Konversi Satuan Sederhana</title>
+  <style>
+    body { font-family: system-ui, Arial; padding: 24px; max-width:600px; margin:auto; }
+    h1 { font-size:1.4rem; margin-bottom:0.2rem; }
+    .card{ border:1px solid #ddd; border-radius:8px; padding:16px; box-shadow:0 2px 6px rgba(0,0,0,0.03); }
+    label{ display:block; margin-top:12px; font-weight:600; }
+    select,input{ width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;}
+    .row{ display:flex; gap:8px; }
+    .row > *{ flex:1; }
+    button{ margin-top:12px; padding:10px 12px; border-radius:8px; border:none; cursor:pointer; background:#246; color:white; font-weight:700; }
+    .result{ margin-top:12px; padding:10px; background:#f7f7f7; border-radius:6px; font-weight:700; text-align:center;}
+    small { color:#666; }
+  </style>
+</head>
+<body>
+  <h1>Konversi Satuan Sederhana</h1>
+  <div class="card">
+    <label>Jenis Satuan
+      <select id="type">
+        <option value="length">Panjang (m, cm, km)</option>
+        <option value="mass">Massa/Berat (kg, g)</option>
+        <option value="temp">Suhu (°C, °F, K)</option>
+      </select>
+    </label>
+
+    <div class="row">
+      <div>
+        <label>Konversi dari
+          <select id="fromUnit"></select>
+        </label>
+      </div>
+      <div>
+        <label>Konversi ke
+          <select id="toUnit"></select>
+        </label>
+      </div>
+    </div>
+
+    <label>Nilai
+      <input id="value" type="number" step="any" placeholder="Masukkan angka"/>
+    </label>
+
+    <button id="convert">Konversi</button>
+
+    <div class="result" id="result">Hasil: —</div>
+    <div style="margin-top:8px"><small>Contoh: pilih jenis lalu masukkan angka, klik Konversi.</small></div>
+  </div>
+
+  <script>
+    // Unit lists
+    const units = {
+      length: [
+        {id:'m', name:'Meter (m)', factor:1},      // base meter
+        {id:'cm', name:'Sentimeter (cm)', factor:0.01},
+        {id:'km', name:'Kilometer (km)', factor:1000}
+      ],
+      mass: [
+        {id:'kg', name:'Kilogram (kg)', factor:1}, // base kilogram
+        {id:'g', name:'Gram (g)', factor:0.001}
+      ],
+      temp: [
+        {id:'C', name:'Celsius (°C)'},
+        {id:'F', name:'Fahrenheit (°F)'},
+        {id:'K', name:'Kelvin (K)'}
+      ]
+    };
+
+    const typeSel = document.getElementById('type');
+    const fromSel = document.getElementById('fromUnit');
+    const toSel = document.getElementById('toUnit');
+    const valueInput = document.getElementById('value');
+    const resultDiv = document.getElementById('result');
+    const convertBtn = document.getElementById('convert');
+
+    function populateUnits() {
+      const t = typeSel.value;
+      fromSel.innerHTML = '';
+      toSel.innerHTML = '';
+      units[t].forEach(u => {
+        const o1 = document.createElement('option');
+        o1.value = u.id; o1.textContent = u.name;
+        fromSel.appendChild(o1);
+        const o2 = o1.cloneNode(true);
+        toSel.appendChild(o2);
+      });
+    }
+
+    // conversion helpers
+    function convertLength(value, fromId, toId) {
+      const list = units.length;
+      const from = list.find(u=>u.id===fromId);
+      const to = list.find(u=>u.id===toId);
+      const valueInMeters = Number(value) * from.factor;
+      return valueInMeters / to.factor;
+    }
+
+    function convertMass(value, fromId, toId) {
+      const list = units.mass;
+      const from = list.find(u=>u.id===fromId);
+      const to = list.find(u=>u.id===toId);
+      const valueInKg = Number(value) * from.factor;
+      return valueInKg / to.factor;
+    }
+
+    function convertTemp(value, fromId, toId) {
+      let v = Number(value);
+      // convert from -> Celsius first
+      let c;
+      if (fromId === 'C') c = v;
+      else if (fromId === 'F') c = (v - 32) * 5/9;
+      else if (fromId === 'K') c = v - 273.15;
+      // convert Celsius -> toId
+      if (toId === 'C') return c;
+      if (toId === 'F') return c * 9/5 + 32;
+      if (toId === 'K') return c + 273.15;
+      return NaN;
+    }
+
+    function niceNumber(n){
+      if (!isFinite(n)) return 'Tidak valid';
+      // tampilkan maksimal 6 angka di belakang koma, hapus trailing zeros
+      return Number.parseFloat(n.toFixed(6)).toString();
+    }
+
+    // event listeners
+    typeSel.addEventListener('change', ()=> {
+      populateUnits();
+      resultDiv.textContent = 'Hasil: —';
+    });
+
+    convertBtn.addEventListener('click', ()=> {
+      const t = typeSel.value;
+      const fromId = fromSel.value;
+      const toId = toSel.value;
+      const val = valueInput.value;
+      if (val === '') {
+        resultDiv.textContent = 'Hasil: Masukkan nilai terlebih dahulu.';
+        return;
+      }
+      let out;
+      if (t === 'length') out = convertLength(val, fromId, toId);
+      else if (t === 'mass') out = convertMass(val, fromId, toId);
+      else if (t === 'temp') out = convertTemp(val, fromId, toId);
+      resultDiv.textContent = `Hasil: ${niceNumber(out)} ${units[t].find(u=>u.id===toId).name}`;
+    });
+
+    // inisialisasi
+    populateUnits();
+  </script>
+</body>
+</html>
